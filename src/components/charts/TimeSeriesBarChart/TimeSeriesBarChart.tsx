@@ -11,6 +11,7 @@ const DEFAULT_COLORS: Record<string, string> = {
   "Sold CabE": "#A0616A",
   "Total CabE": "#BDB76B",
 };
+const MS_PER_DAY = 24 * 60 * 60 * 1000; // Milliseconds in one day
 
 const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   data,
@@ -28,8 +29,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   marginRight = 20,
   yTickFormat,
   xTickFormat,
-  barWidthMs = 12 * 24 * 60 * 60 * 1000, // 12 days
-  barGapMs = 2 * 24 * 60 * 60 * 1000, // 2 days
+  barWidthDays = 12,
+  barGapDays = 2,
   title,
   offsetLeft = 0,
 }) => {
@@ -73,6 +74,10 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     const rectData: RectDataItem[] = data.map((d) => {
       const categoryIndex = categories.indexOf(d.category);
       const totalCategories = categories.length;
+
+      // Convert days to milliseconds
+      const barWidthMs = barWidthDays * MS_PER_DAY;
+      const barGapMs = barGapDays * MS_PER_DAY;
 
       // Center the group of bars, then offset each bar
       const groupOffset =
@@ -289,8 +294,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     marginRight,
     yTickFormat,
     xTickFormat,
-    barWidthMs,
-    barGapMs,
+    barWidthDays,
+    barGapDays,
     offsetLeft,
   ]);
 

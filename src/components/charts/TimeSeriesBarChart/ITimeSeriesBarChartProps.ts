@@ -90,16 +90,16 @@ export interface TimeSeriesBarChartProps {
   xTickFormat?: (value: Date) => string;
 
   /**
-   * Bar width in milliseconds
-   * @default 12 days (12 * 24 * 60 * 60 * 1000)
+   * Bar width in days
+   * @default 12
    */
-  barWidthMs?: number;
+  barWidthDays?: number;
 
   /**
-   * Gap between bars in milliseconds
-   * @default 2 days (2 * 24 * 60 * 60 * 1000)
+   * Gap between bars in days
+   * @default 2
    */
-  barGapMs?: number;
+  barGapDays?: number;
 
   /**
    * Title for the chart (optional)
