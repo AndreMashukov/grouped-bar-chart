@@ -33,6 +33,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   barGapDays = 0,
   title,
   offsetLeft = 10,
+  showXAxisLine = true,
+  showYAxisLine = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -146,11 +148,13 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     const xAxisGroup = g.append("g")
       .attr("transform", `translate(0,${innerHeight})`);
 
-    // Add axis line
-    xAxisGroup.append("line")
-      .attr("x1", 0)
-      .attr("x2", innerWidth)
-      .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+    // Add axis line (conditionally)
+    if (showXAxisLine) {
+      xAxisGroup.append("line")
+        .attr("x1", 0)
+        .attr("x2", innerWidth)
+        .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+    }
 
     // Calculate center position for each date group and add labels
     const defaultXTickFormat = d3.utcFormat("%b-%y");
@@ -184,8 +188,12 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     const yAxisGroup = g.append("g")
       .call(yAxis);
 
-    yAxisGroup.selectAll("line, path")
-      .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+    if (showYAxisLine) {
+      yAxisGroup.selectAll("line, path")
+        .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+    } else {
+      yAxisGroup.selectAll("line, path").remove();
+    }
 
     yAxisGroup.selectAll("text")
       .attr("fill", darkMode ? "#E0E0E0" : "#333");
@@ -264,14 +272,16 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
         tooltip.style("visibility", "hidden");
       });
 
-    // Draw baseline
-    g.append("line")
-      .attr("x1", 0)
-      .attr("x2", innerWidth)
-      .attr("y1", yScale(0))
-      .attr("y2", yScale(0))
-      .attr("stroke", darkMode ? "#E0E0E0" : "#666")
-      .attr("stroke-width", 1);
+    // Draw baseline (conditionally)
+    if (showXAxisLine) {
+      g.append("line")
+        .attr("x1", 0)
+        .attr("x2", innerWidth)
+        .attr("y1", yScale(0))
+        .attr("y2", yScale(0))
+        .attr("stroke", darkMode ? "#E0E0E0" : "#666")
+        .attr("stroke-width", 1);
+    }
 
     // Draw legend
     if (legend) {
@@ -322,6 +332,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     barWidthDays,
     barGapDays,
     offsetLeft,
+    showXAxisLine,
+    showYAxisLine,
   ]);
 
   return (

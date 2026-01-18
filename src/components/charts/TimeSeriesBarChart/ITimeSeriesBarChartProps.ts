@@ -111,4 +111,16 @@ export interface TimeSeriesBarChartProps {
    * @default 0
    */
   offsetLeft?: number;
+
+  /**
+   * Show X-axis line
+   * @default true
+   */
+  showXAxisLine?: boolean;
+
+  /**
+   * Show Y-axis line
+   * @default true
+   */
+  showYAxisLine?: boolean;
 }

@@ -21,6 +21,9 @@ const monthlyCabEData: TimeSeriesDataItem[] = [
 function App() {
   const [count, setCount] = useState(0)
   const [barGapDays, setBarGapDays] = useState(2)
+  const [barWidthDays, setBarWidthDays] = useState(7)
+  const [showXAxisLine, setShowXAxisLine] = useState(true)
+  const [showYAxisLine, setShowYAxisLine] = useState(true)
 
   return (
     <div className="App">
@@ -38,6 +41,38 @@ function App() {
             style={{ width: '200px', marginLeft: '10px' }}
           />
         </div>
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <label>barWidthDays: {barWidthDays}</label>
+          <input 
+            type="range" 
+            min="1" 
+            max="30" 
+            step="0.5"
+            value={barWidthDays} 
+            onChange={(e) => setBarWidthDays(Number(e.target.value))}
+            style={{ width: '200px', marginLeft: '10px' }}
+          />
+        </div>
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <label>
+            <input 
+              type="checkbox" 
+              checked={showXAxisLine}
+              onChange={(e) => setShowXAxisLine(e.target.checked)}
+              style={{ marginRight: '5px' }}
+            />
+            Show X-Axis Line
+          </label>
+          <label style={{ marginLeft: '20px' }}>
+            <input 
+              type="checkbox" 
+              checked={showYAxisLine}
+              onChange={(e) => setShowYAxisLine(e.target.checked)}
+              style={{ marginRight: '5px' }}
+            />
+            Show Y-Axis Line
+          </label>
+        </div>
         <div style={{ width: '100%', maxWidth: '1200px', border: '1px solid red', padding: '10px' }}>
           <TimeSeriesBarChart
             data={monthlyCabEData}
@@ -47,6 +82,10 @@ function App() {
             yTickFormat={(d) => `${d / 1000}K`}
             offsetLeft={10}
             barGapDays={barGapDays}
+            barWidthDays={barWidthDays}
+            showXAxisLine={showXAxisLine}
+            showYAxisLine={showYAxisLine}
+            marginBottom={0}
             width={1000}
             height={400}
           />
