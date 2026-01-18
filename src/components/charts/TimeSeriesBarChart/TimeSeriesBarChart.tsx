@@ -1,5 +1,4 @@
 import React, {useEffect, useRef} from "react";
-import * as Plot from "@observablehq/plot";
 import * as d3 from "d3";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -32,9 +31,10 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   barWidthMs = 12 * 24 * 60 * 60 * 1000, // 12 days
   barGapMs = 2 * 24 * 60 * 60 * 1000, // 2 days
   title,
+  offsetLeft = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const plotRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   // Use responsive dimensions hook
   const {calculatedDimensions} = useResponsiveDimensions({
@@ -52,18 +52,25 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     typeof height === "number" ? height : calculatedDimensions.height;
 
   useEffect(() => {
-    if (!plotRef.current || !data || data.length === 0) return;
+    if (!svgRef.current || !data || data.length === 0) return;
 
-    // Clear previous plot
-    plotRef.current.innerHTML = "";
+    // Clear previous content
+    d3.select(svgRef.current).selectAll("*").remove();
+
+    // Calculate inner dimensions
+    const innerWidth = finalWidth - marginLeft - marginRight - offsetLeft;
+    const innerHeight = finalHeight - marginTop - marginBottom;
 
     // Extract unique categories
-    const categories = Array.from(
-      new Set(data.map((d) => d.category))
-    );
+    const categories = Array.from(new Set(data.map(d => d.category)));
 
     // Calculate x1/x2 positions for each bar
-    const rectData = data.map((d) => {
+    interface RectDataItem extends TimeSeriesDataItem {
+      x1: Date;
+      x2: Date;
+    }
+
+    const rectData: RectDataItem[] = data.map((d) => {
       const categoryIndex = categories.indexOf(d.category);
       const totalCategories = categories.length;
 
@@ -80,73 +87,191 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
       };
     });
 
-    const plot = Plot.plot({
-      width: finalWidth,
-      height: finalHeight,
-      marginLeft,
-      marginBottom,
-      marginTop,
-      marginRight,
+    // Create SVG
+    const svg = d3.select(svgRef.current)
+      .attr("width", finalWidth)
+      .attr("height", finalHeight)
+      .style("background", darkMode ? "#2C3142" : "#FFFFFF");
 
-      style: {
-        background: darkMode ? "#2C3142" : "#FFFFFF",
-        color: darkMode ? "#E0E0E0" : "#333333",
-      },
+    // Create main group with margins
+    const g = svg.append("g")
+      .attr("transform", `translate(${marginLeft + offsetLeft},${marginTop})`);
 
-      // X-axis (temporal)
-      x: {
-        type: "utc",
-        label: xLabel !== undefined ? xLabel : null,
-        tickFormat: xTickFormat || d3.utcFormat("%b-%y"),
-      },
+    // X scale (time scale)
+    const allDates = rectData.flatMap(d => [d.x1, d.x2]);
+    const xScale = d3.scaleTime()
+      .domain(d3.extent(allDates) as [Date, Date])
+      .range([0, innerWidth]);
 
-      // Y-axis
-      y: {
-        grid: true,
-        gridStroke: darkMode ? "#404552" : "#D3D3D3",
-        gridStrokeDasharray: "3,3", // Dotted grid lines
-        label: yLabel !== undefined ? yLabel : null,
-        domain: yDomain,
-        tickFormat: yTickFormat,
-      },
+    // Y scale
+    const yMax = yDomain ? yDomain[1] : (d3.max(data, d => d.value) || 0);
+    const yMin = yDomain ? yDomain[0] : 0;
+    const yScale = d3.scaleLinear()
+      .domain([yMin, yMax])
+      .range([innerHeight, 0])
+      .nice();
 
-      // Color scale
-      color: {
-        domain: categories,
-        range: categories.map((cat) => colors[cat] || "#999999"),
-        legend,
-      },
+    // Color scale
+    const colorScale = d3.scaleOrdinal<string>()
+      .domain(categories)
+      .range(categories.map(cat => colors[cat] || "#999999"));
 
-      marks: [
-        // Use rectY with explicit x1/x2 for temporal scale compatibility
-        Plot.rectY(rectData, {
-          x1: "x1",
-          x2: "x2",
-          y: "value",
-          fill: "category",
-          tip: {
-            format: {
-              x1: (d: Date) =>
-                xTickFormat ? xTickFormat(d) : d3.utcFormat("%b %Y")(d),
-              x2: false,
-              y: yTickFormat,
-            },
-          },
-        }),
+    // Draw grid (horizontal lines)
+    g.append("g")
+      .attr("class", "grid")
+      .call(
+        d3.axisLeft(yScale)
+          .tickSize(-innerWidth)
+          .tickFormat(() => "")
+      )
+      .selectAll("line")
+      .attr("stroke", darkMode ? "#404552" : "#D3D3D3")
+      .attr("stroke-dasharray", "3,3");
 
-        // Baseline
-        Plot.ruleY([0], {
-          stroke: darkMode ? "#E0E0E0" : "#666",
-          strokeWidth: 1,
-        }),
-      ],
-    });
+    // Remove grid domain line
+    g.select(".grid .domain").remove();
 
-    plotRef.current.append(plot);
+    // Draw X-axis
+    const xAxis = xTickFormat 
+      ? d3.axisBottom(xScale).tickFormat(xTickFormat as any)
+      : d3.axisBottom(xScale).tickFormat(d3.utcFormat("%b-%y") as any);
+
+    const xAxisGroup = g.append("g")
+      .attr("transform", `translate(0,${innerHeight})`)
+      .call(xAxis);
+
+    xAxisGroup.selectAll("line, path")
+      .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+
+    xAxisGroup.selectAll("text")
+      .attr("fill", darkMode ? "#E0E0E0" : "#333");
+
+    // Draw Y-axis
+    const yAxis = yTickFormat
+      ? d3.axisLeft(yScale).tickFormat(yTickFormat as any)
+      : d3.axisLeft(yScale);
+
+    const yAxisGroup = g.append("g")
+      .call(yAxis);
+
+    yAxisGroup.selectAll("line, path")
+      .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+
+    yAxisGroup.selectAll("text")
+      .attr("fill", darkMode ? "#E0E0E0" : "#333");
+
+    // Add Y-axis label
+    if (yLabel !== undefined && yLabel !== null) {
+      svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -finalHeight / 2)
+        .attr("y", 15)
+        .attr("text-anchor", "middle")
+        .attr("fill", darkMode ? "#E0E0E0" : "#333")
+        .style("font-size", "14px")
+        .text(yLabel);
+    }
+
+    // Add X-axis label
+    if (xLabel !== undefined && xLabel !== null) {
+      svg.append("text")
+        .attr("x", finalWidth / 2)
+        .attr("y", finalHeight - 5)
+        .attr("text-anchor", "middle")
+        .attr("fill", darkMode ? "#E0E0E0" : "#333")
+        .style("font-size", "14px")
+        .text(xLabel);
+    }
+
+    // Create tooltip
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "d3-tooltip-timeseries")
+      .style("position", "absolute")
+      .style("visibility", "hidden")
+      .style("background-color", darkMode ? "#2C3142" : "#fff")
+      .style("color", darkMode ? "#E0E0E0" : "#333")
+      .style("border", `1px solid ${darkMode ? "#404552" : "#ddd"}`)
+      .style("padding", "8px")
+      .style("border-radius", "4px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("z-index", "1000");
+
+    // Draw bars
+    g.selectAll(".bar")
+      .data(rectData)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", d => xScale(d.x1))
+      .attr("y", d => yScale(d.value))
+      .attr("width", d => xScale(d.x2) - xScale(d.x1))
+      .attr("height", d => innerHeight - yScale(d.value))
+      .attr("fill", d => colorScale(d.category))
+      .on("mouseover", function(event, d) {
+        d3.select(this).attr("opacity", 0.8);
+        
+        const dateStr = xTickFormat 
+          ? xTickFormat(d.date) 
+          : d3.utcFormat("%b %Y")(d.date);
+        const valueStr = yTickFormat ? yTickFormat(d.value) : d.value;
+        
+        tooltip
+          .style("visibility", "visible")
+          .html(`
+            <strong>${dateStr}</strong><br/>
+            ${d.category}: ${valueStr}
+          `);
+      })
+      .on("mousemove", function(event) {
+        tooltip
+          .style("top", (event.pageY - 10) + "px")
+          .style("left", (event.pageX + 10) + "px");
+      })
+      .on("mouseout", function() {
+        d3.select(this).attr("opacity", 1);
+        tooltip.style("visibility", "hidden");
+      });
+
+    // Draw baseline
+    g.append("line")
+      .attr("x1", 0)
+      .attr("x2", innerWidth)
+      .attr("y1", yScale(0))
+      .attr("y2", yScale(0))
+      .attr("stroke", darkMode ? "#E0E0E0" : "#666")
+      .attr("stroke-width", 1);
+
+    // Draw legend
+    if (legend) {
+      const legendGroup = svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${finalWidth - 120}, 20)`);
+
+      const legendItems = legendGroup.selectAll(".legend-item")
+        .data(categories)
+        .enter()
+        .append("g")
+        .attr("class", "legend-item")
+        .attr("transform", (_, i) => `translate(0, ${i * 20})`);
+
+      legendItems.append("rect")
+        .attr("width", 15)
+        .attr("height", 15)
+        .attr("fill", d => colorScale(d));
+
+      legendItems.append("text")
+        .attr("x", 20)
+        .attr("y", 12)
+        .attr("fill", darkMode ? "#E0E0E0" : "#333")
+        .style("font-size", "12px")
+        .text(d => d);
+    }
 
     // Cleanup
     return () => {
-      if (plot) plot.remove();
+      d3.selectAll(".d3-tooltip-timeseries").remove();
     };
   }, [
     data,
@@ -166,6 +291,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     xTickFormat,
     barWidthMs,
     barGapMs,
+    offsetLeft,
   ]);
 
   return (
@@ -190,7 +316,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
           {title}
         </Typography>
       )}
-      <div ref={plotRef} />
+      <svg ref={svgRef} />
     </Box>
   );
 };
