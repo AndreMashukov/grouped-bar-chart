@@ -105,4 +105,10 @@ export interface TimeSeriesBarChartProps {
    * Title for the chart (optional)
    */
   title?: string;
+
+  /**
+   * Left offset for the chart content (in addition to marginLeft)
+   * @default 0
+   */
+  offsetLeft?: number;
 }
