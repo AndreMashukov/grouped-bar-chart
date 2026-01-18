@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from "react";
+import React, {useEffect, useRef, useMemo, useCallback} from "react";
 import * as d3 from "d3";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -12,6 +12,12 @@ const DEFAULT_COLORS: Record<string, string> = {
   "Total CabE": "#BDB76B",
 };
 const MS_PER_DAY = 24 * 60 * 60 * 1000; // Milliseconds in one day
+
+// Memoized data item interface for processed bar data
+interface RectDataItem extends TimeSeriesDataItem {
+  x1: Date;
+  x2: Date;
+}
 
 const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   data,
@@ -38,6 +44,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> | null>(null);
 
   // Use responsive dimensions hook
   const {calculatedDimensions} = useResponsiveDimensions({
@@ -54,39 +61,40 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   const finalHeight =
     typeof height === "number" ? height : calculatedDimensions.height;
 
-  useEffect(() => {
-    if (!svgRef.current || !data || data.length === 0) return;
+  // Memoize extracted categories for stable reference
+  const categories = useMemo(() => 
+    Array.from(new Set(data.map(d => d.category))),
+    [data]
+  );
 
-    // Clear previous content
-    d3.select(svgRef.current).selectAll("*").remove();
+  // Memoize calculated inner dimensions
+  const dimensions = useMemo(() => {
+    const xTickLabelSpace = 20;
+    const xAxisLabelSpace = xLabel ? 20 : 0;
+    const requiredBottomSpace = xTickLabelSpace + xAxisLabelSpace;
+    const effectiveMarginBottom = Math.max(marginBottom, requiredBottomSpace);
+    
+    return {
+      innerWidth: finalWidth - marginLeft - marginRight,
+      innerHeight: finalHeight - marginTop - effectiveMarginBottom,
+      effectiveMarginBottom,
+      xTickLabelSpace,
+    };
+  }, [finalWidth, finalHeight, marginLeft, marginRight, marginTop, marginBottom, xLabel]);
 
-    // Calculate inner dimensions
-    // innerWidth is the full chart area width (bars can use from offsetLeft to innerWidth)
-    const innerWidth = finalWidth - marginLeft - marginRight;
-    const innerHeight = finalHeight - marginTop - marginBottom;
-
-    // Extract unique categories
-    const categories = Array.from(new Set(data.map(d => d.category)));
-
-    // Calculate x1/x2 positions for each bar
-    interface RectDataItem extends TimeSeriesDataItem {
-      x1: Date;
-      x2: Date;
-    }
-
-    const rectData: RectDataItem[] = data.map((d) => {
+  // Memoize processed bar data with x1/x2 positions
+  const rectData = useMemo((): RectDataItem[] => {
+    if (!data || data.length === 0) return [];
+    
+    return data.map((d) => {
       const categoryIndex = categories.indexOf(d.category);
       const totalCategories = categories.length;
 
-      // Convert days to milliseconds
       const barWidthMs = barWidthDays * MS_PER_DAY;
       const barGapMs = barGapDays * MS_PER_DAY;
 
-      // Center the group of bars, then offset each bar
-      const groupOffset =
-        ((totalCategories - 1) * (barWidthMs + barGapMs)) / 2;
-      const barOffset =
-        categoryIndex * (barWidthMs + barGapMs) - groupOffset;
+      const groupOffset = ((totalCategories - 1) * (barWidthMs + barGapMs)) / 2;
+      const barOffset = categoryIndex * (barWidthMs + barGapMs) - groupOffset;
 
       return {
         ...d,
@@ -94,72 +102,135 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
         x2: new Date(d.date.getTime() + barOffset + barWidthMs),
       };
     });
+  }, [data, categories, barWidthDays, barGapDays]);
 
-    // Create SVG
-    const svg = d3.select(svgRef.current)
+  // Memoize scales for better performance
+  const xScale = useMemo(() => {
+    if (rectData.length === 0) return null;
+    
+    const allDates = rectData.flatMap(d => [d.x1, d.x2]);
+    return d3.scaleTime()
+      .domain(d3.extent(allDates) as [Date, Date])
+      .range([offsetLeft, dimensions.innerWidth]);
+  }, [rectData, offsetLeft, dimensions.innerWidth]);
+
+  const yScale = useMemo(() => {
+    const yMax = yDomain ? yDomain[1] : (d3.max(data, d => d.value) || 0);
+    const yMin = yDomain ? yDomain[0] : 0;
+    return d3.scaleLinear()
+      .domain([yMin, yMax])
+      .range([dimensions.innerHeight, 0])
+      .nice();
+  }, [data, yDomain, dimensions.innerHeight]);
+
+  const colorScale = useMemo(() => 
+    d3.scaleOrdinal<string>()
+      .domain(categories)
+      .range(categories.map(cat => colors[cat] || "#999999")),
+    [categories, colors]
+  );
+
+  // Memoize unique dates for X-axis labels
+  const uniqueDates = useMemo(() => 
+    Array.from(new Set(data.map(d => d.date.getTime())))
+      .map(time => new Date(time))
+      .sort((a, b) => a.getTime() - b.getTime()),
+    [data]
+  );
+
+  // Memoize format functions
+  const defaultXTickFormat = useMemo(() => d3.utcFormat("%b-%y"), []);
+  const formatFn = xTickFormat || defaultXTickFormat;
+
+  // Memoized tooltip handlers for better performance
+  const handleMouseOver = useCallback(function(
+    this: SVGRectElement,
+    _event: MouseEvent,
+    d: RectDataItem
+  ) {
+    d3.select(this).attr("opacity", 0.8);
+    
+    const dateStr = xTickFormat 
+      ? xTickFormat(d.date) 
+      : d3.utcFormat("%b %Y")(d.date);
+    const valueStr = yTickFormat ? yTickFormat(d.value) : d.value;
+    
+    if (tooltipRef.current) {
+      tooltipRef.current
+        .style("visibility", "visible")
+        .html(`
+          <strong>${dateStr}</strong><br/>
+          ${d.category}: ${valueStr}
+        `);
+    }
+  }, [xTickFormat, yTickFormat]);
+
+  const handleMouseMove = useCallback(function(event: MouseEvent) {
+    if (tooltipRef.current) {
+      tooltipRef.current
+        .style("top", (event.pageY - 10) + "px")
+        .style("left", (event.pageX + 10) + "px");
+    }
+  }, []);
+
+  const handleMouseOut = useCallback(function(this: SVGRectElement) {
+    d3.select(this).attr("opacity", 1);
+    if (tooltipRef.current) {
+      tooltipRef.current.style("visibility", "hidden");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!svgRef.current || !data || data.length === 0 || !xScale) return;
+
+    const svg = d3.select(svgRef.current);
+    
+    // Clear previous content efficiently
+    svg.selectAll("*").remove();
+    
+    // Set SVG attributes
+    svg
       .attr("width", finalWidth)
       .attr("height", finalHeight)
       .style("background", darkMode ? "#2C3142" : "#FFFFFF");
+
+    const { innerWidth, innerHeight, xTickLabelSpace } = dimensions;
 
     // Create main group with margins (Y-axis will be at marginLeft)
     const g = svg.append("g")
       .attr("transform", `translate(${marginLeft},${marginTop})`);
 
-    // X scale (time scale) - starts at offsetLeft to create gap between Y-axis and first bar
-    const allDates = rectData.flatMap(d => [d.x1, d.x2]);
-    const xScale = d3.scaleTime()
-      .domain(d3.extent(allDates) as [Date, Date])
-      .range([offsetLeft, innerWidth]);
-
-    // Y scale
-    const yMax = yDomain ? yDomain[1] : (d3.max(data, d => d.value) || 0);
-    const yMin = yDomain ? yDomain[0] : 0;
-    const yScale = d3.scaleLinear()
-      .domain([yMin, yMax])
-      .range([innerHeight, 0])
-      .nice();
-
-    // Color scale
-    const colorScale = d3.scaleOrdinal<string>()
-      .domain(categories)
-      .range(categories.map(cat => colors[cat] || "#999999"));
-
-    // Draw grid (horizontal lines)
-    g.append("g")
+    // Draw grid (horizontal lines) - use shape-rendering for crisp lines
+    const gridGroup = g.append("g")
       .attr("class", "grid")
       .call(
         d3.axisLeft(yScale)
           .tickSize(-innerWidth)
           .tickFormat(() => "")
-      )
-      .selectAll("line")
+      );
+    
+    gridGroup.selectAll("line")
       .attr("stroke", darkMode ? "#404552" : "#D3D3D3")
-      .attr("stroke-dasharray", "3,3");
+      .attr("stroke-dasharray", "3,3")
+      .style("shape-rendering", "crispEdges");
 
     // Remove grid domain line
-    g.select(".grid .domain").remove();
-
-    // Get unique dates for X-axis labels (center of each group)
-    const uniqueDates = Array.from(new Set(data.map(d => d.date.getTime())))
-      .map(time => new Date(time))
-      .sort((a, b) => a.getTime() - b.getTime());
+    gridGroup.select(".domain").remove();
 
     // Draw X-axis line only (no ticks)
     const xAxisGroup = g.append("g")
       .attr("transform", `translate(0,${innerHeight})`);
 
-    // Add axis line (conditionally)
+    // Add axis line (conditionally) - use shape-rendering for crisp lines
     if (showXAxisLine) {
       xAxisGroup.append("line")
         .attr("x1", 0)
         .attr("x2", innerWidth)
-        .attr("stroke", darkMode ? "#E0E0E0" : "#666");
+        .attr("stroke", darkMode ? "#E0E0E0" : "#666")
+        .style("shape-rendering", "crispEdges");
     }
 
     // Calculate center position for each date group and add labels
-    const defaultXTickFormat = d3.utcFormat("%b-%y");
-    const formatFn = xTickFormat || defaultXTickFormat;
-
     uniqueDates.forEach(date => {
       // Find the bars for this date to calculate center
       const barsForDate = rectData.filter(d => d.date.getTime() === date.getTime());
@@ -214,14 +285,15 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     if (xLabel !== undefined && xLabel !== null) {
       svg.append("text")
         .attr("x", finalWidth / 2)
-        .attr("y", finalHeight - 5)
+        .attr("y", marginTop + innerHeight + xTickLabelSpace + 15)
         .attr("text-anchor", "middle")
         .attr("fill", darkMode ? "#E0E0E0" : "#333")
         .style("font-size", "14px")
         .text(xLabel);
     }
 
-    // Create tooltip
+    // Create tooltip - reuse existing or create new
+    d3.selectAll(".d3-tooltip-timeseries").remove();
     const tooltip = d3.select("body")
       .append("div")
       .attr("class", "d3-tooltip-timeseries")
@@ -235,44 +307,48 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
       .style("font-size", "12px")
       .style("pointer-events", "none")
       .style("z-index", "1000");
+    
+    // Store tooltip ref for memoized handlers
+    tooltipRef.current = tooltip;
 
-    // Draw bars
-    g.selectAll(".bar")
-      .data(rectData)
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .attr("x", d => xScale(d.x1))
-      .attr("y", d => yScale(d.value))
-      .attr("width", d => xScale(d.x2) - xScale(d.x1))
-      .attr("height", d => innerHeight - yScale(d.value))
-      .attr("fill", d => colorScale(d.category))
-      .on("mouseover", function(event, d) {
-        d3.select(this).attr("opacity", 0.8);
-        
-        const dateStr = xTickFormat 
-          ? xTickFormat(d.date) 
-          : d3.utcFormat("%b %Y")(d.date);
-        const valueStr = yTickFormat ? yTickFormat(d.value) : d.value;
-        
-        tooltip
-          .style("visibility", "visible")
-          .html(`
-            <strong>${dateStr}</strong><br/>
-            ${d.category}: ${valueStr}
-          `);
-      })
-      .on("mousemove", function(event) {
-        tooltip
-          .style("top", (event.pageY - 10) + "px")
-          .style("left", (event.pageX + 10) + "px");
-      })
-      .on("mouseout", function() {
-        d3.select(this).attr("opacity", 1);
-        tooltip.style("visibility", "hidden");
-      });
+    // Draw bars using join() for efficient updates
+    g.selectAll<SVGRectElement, RectDataItem>(".bar")
+      .data(rectData, d => `${d.date.getTime()}-${d.category}`)
+      .join(
+        enter => enter.append("rect")
+          .attr("class", "bar")
+          .attr("x", d => xScale(d.x1))
+          .attr("y", innerHeight)
+          .attr("width", d => xScale(d.x2) - xScale(d.x1))
+          .attr("height", 0)
+          .attr("fill", d => colorScale(d.category))
+          .call(enter => enter.transition()
+            .duration(300)
+            .attr("y", d => yScale(d.value))
+            .attr("height", d => innerHeight - yScale(d.value))
+          ),
+        update => update
+          .call(update => update.transition()
+            .duration(300)
+            .attr("x", d => xScale(d.x1))
+            .attr("y", d => yScale(d.value))
+            .attr("width", d => xScale(d.x2) - xScale(d.x1))
+            .attr("height", d => innerHeight - yScale(d.value))
+            .attr("fill", d => colorScale(d.category))
+          ),
+        exit => exit
+          .call(exit => exit.transition()
+            .duration(300)
+            .attr("y", innerHeight)
+            .attr("height", 0)
+            .remove()
+          )
+      )
+      .on("mouseover", handleMouseOver as any)
+      .on("mousemove", handleMouseMove as any)
+      .on("mouseout", handleMouseOut as any);
 
-    // Draw baseline (conditionally)
+    // Draw baseline (conditionally) - use shape-rendering for crisp lines
     if (showXAxisLine) {
       g.append("line")
         .attr("x1", 0)
@@ -280,7 +356,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
         .attr("y1", yScale(0))
         .attr("y2", yScale(0))
         .attr("stroke", darkMode ? "#E0E0E0" : "#666")
-        .attr("stroke-width", 1);
+        .attr("stroke-width", 1)
+        .style("shape-rendering", "crispEdges");
     }
 
     // Draw legend
@@ -314,26 +391,32 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
       d3.selectAll(".d3-tooltip-timeseries").remove();
     };
   }, [
-    data,
+    // Core data dependencies
+    rectData,
+    xScale,
+    yScale,
+    colorScale,
+    categories,
+    uniqueDates,
+    dimensions,
+    formatFn,
+    // Layout dependencies
     finalWidth,
     finalHeight,
-    colors,
+    marginLeft,
+    marginTop,
+    // Style dependencies
+    darkMode,
     legend,
     xLabel,
     yLabel,
-    darkMode,
-    yDomain,
-    marginLeft,
-    marginBottom,
-    marginTop,
-    marginRight,
-    yTickFormat,
-    xTickFormat,
-    barWidthDays,
-    barGapDays,
-    offsetLeft,
     showXAxisLine,
     showYAxisLine,
+    yTickFormat,
+    // Memoized handlers
+    handleMouseOver,
+    handleMouseMove,
+    handleMouseOut,
   ]);
 
   return (
