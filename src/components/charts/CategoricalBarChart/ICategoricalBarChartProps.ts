@@ -40,9 +40,21 @@ export interface CategoricalBarChartProps {
   xLabel?: string | null;
 
   /**
+   * Style object for X-axis label
+   * @example { fontSize: '16px', fontWeight: 'bold', fill: '#333' }
+   */
+  xLabelStyle?: React.CSSProperties;
+
+  /**
    * Y-axis label
    */
   yLabel?: string | null;
+
+  /**
+   * Style object for Y-axis label
+   * @example { fontSize: '16px', fontWeight: 'bold', fill: '#333' }
+   */
+  yLabelStyle?: React.CSSProperties;
 
   /**
    * Dark mode styling
@@ -80,21 +92,39 @@ export interface CategoricalBarChartProps {
   marginRight?: number;
 
   /**
+   * Number of ticks on the y-axis
+   * @default 5
+   */
+  numberOfTicks?: number;
+
+  /**
    * Custom y-axis tick format function
    */
   yTickFormat?: (value: number) => string;
 
   /**
-   * Inset for bars (spacing between bars)
-   * @default 0.2
+   * Padding between bars within a group (0-1)
+   * @default 0.1
    */
-  inset?: number;
+  barPadding?: number;
 
   /**
-   * Padding for facets (spacing between groups)
-   * @default 0.15
+   * Padding between groups (0-1)
+   * @default 0.2
    */
-  facetPadding?: number;
+  groupPadding?: number;
+
+  /**
+   * Whether to show X-axis line
+   * @default true
+   */
+  showXAxisLine?: boolean;
+
+  /**
+   * Whether to show Y-axis line
+   * @default true
+   */
+  showYAxisLine?: boolean;
 
   /**
    * Title for the chart (optional)

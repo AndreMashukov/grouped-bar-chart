@@ -1,107 +1,375 @@
-import type {Meta, StoryObj} from "@storybook/react";
-import CategoricalBarChart from "./CategoricalBarChart";
-import {CategoricalDataItem} from "./ICategoricalBarChartProps";
+import type { Meta, StoryObj } from '@storybook/react';
+import CategoricalBarChart from './CategoricalBarChart';
+import { CategoricalDataItem } from './ICategoricalBarChartProps';
 
-const meta: Meta<typeof CategoricalBarChart> = {
-  title: "Charts/CategoricalBarChart",
+// Sample data for stories
+const appleProductData: CategoricalDataItem[] = [
+  { group: '2019', category: 'iPhone', value: 142 },
+  { group: '2019', category: 'Mac', value: 26 },
+  { group: '2019', category: 'iPad', value: 21 },
+  { group: '2019', category: 'Wearables', value: 24 },
+  { group: '2019', category: 'Services', value: 46 },
+  { group: '2020', category: 'iPhone', value: 138 },
+  { group: '2020', category: 'Mac', value: 28 },
+  { group: '2020', category: 'iPad', value: 24 },
+  { group: '2020', category: 'Wearables', value: 31 },
+  { group: '2020', category: 'Services', value: 54 },
+  { group: '2021', category: 'iPhone', value: 192 },
+  { group: '2021', category: 'Mac', value: 35 },
+  { group: '2021', category: 'iPad', value: 32 },
+  { group: '2021', category: 'Wearables', value: 38 },
+  { group: '2021', category: 'Services', value: 68 },
+  { group: '2022', category: 'iPhone', value: 205 },
+  { group: '2022', category: 'Mac', value: 40 },
+  { group: '2022', category: 'iPad', value: 29 },
+  { group: '2022', category: 'Wearables', value: 41 },
+  { group: '2022', category: 'Services', value: 78 },
+];
+
+const salesByRegion: CategoricalDataItem[] = [
+  { group: 'Q1', category: 'North America', value: 120 },
+  { group: 'Q1', category: 'Europe', value: 90 },
+  { group: 'Q1', category: 'Asia', value: 150 },
+  { group: 'Q2', category: 'North America', value: 135 },
+  { group: 'Q2', category: 'Europe', value: 100 },
+  { group: 'Q2', category: 'Asia', value: 165 },
+  { group: 'Q3', category: 'North America', value: 145 },
+  { group: 'Q3', category: 'Europe', value: 110 },
+  { group: 'Q3', category: 'Asia', value: 180 },
+  { group: 'Q4', category: 'North America', value: 160 },
+  { group: 'Q4', category: 'Europe', value: 125 },
+  { group: 'Q4', category: 'Asia', value: 200 },
+];
+
+const meta = {
+  title: 'Charts/CategoricalBarChart',
   component: CategoricalBarChart,
   parameters: {
-    layout: "centered",
+    layout: 'centered',
   },
-  tags: ["autodocs"],
-};
+  tags: ['autodocs'],
+  argTypes: {
+    data: {
+      description: 'Array of data items with group, category, and value',
+      control: false,
+    },
+    width: {
+      control: { type: 'number', min: 400, max: 1600, step: 50 },
+      description: 'Width of the chart in pixels',
+    },
+    height: {
+      control: { type: 'number', min: 300, max: 800, step: 50 },
+      description: 'Height of the chart in pixels',
+    },
+    darkMode: {
+      control: 'boolean',
+      description: 'Enable dark mode styling',
+    },
+    legend: {
+      control: 'boolean',
+      description: 'Show/hide legend',
+    },
+    xLabel: {
+      control: 'text',
+      description: 'Label for X-axis',
+    },
+    yLabel: {
+      control: 'text',
+      description: 'Label for Y-axis',
+    },
+    title: {
+      control: 'text',
+      description: 'Chart title',
+    },
+    barPadding: {
+      control: { type: 'range', min: 0, max: 0.5, step: 0.05 },
+      description: 'Padding between bars within a group',
+    },
+    groupPadding: {
+      control: { type: 'range', min: 0, max: 0.5, step: 0.05 },
+      description: 'Padding between groups',
+    },
+    numberOfTicks: {
+      control: { type: 'number', min: 3, max: 10, step: 1 },
+      description: 'Number of ticks on Y-axis',
+    },
+    showXAxisLine: {
+      control: 'boolean',
+      description: 'Show/hide X-axis line',
+    },
+    showYAxisLine: {
+      control: 'boolean',
+      description: 'Show/hide Y-axis line',
+    },
+  },
+} satisfies Meta<typeof CategoricalBarChart>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Sample data: Apple product sales by quarter
-const appleSalesData: CategoricalDataItem[] = [
-  {group: "Q1'18", category: "iPhone", value: 140},
-  {group: "Q1'18", category: "Mac", value: 16},
-  {group: "Q1'18", category: "iPad", value: 14},
-  {group: "Q1'18", category: "Wearables", value: 12},
-  {group: "Q1'18", category: "Services", value: 18},
-
-  {group: "Q2'18", category: "iPhone", value: 125},
-  {group: "Q2'18", category: "Mac", value: 19},
-  {group: "Q2'18", category: "iPad", value: 15},
-  {group: "Q2'18", category: "Wearables", value: 13},
-  {group: "Q2'18", category: "Services", value: 28},
-
-  {group: "Q3'18", category: "iPhone", value: 112},
-  {group: "Q3'18", category: "Mac", value: 20},
-  {group: "Q3'18", category: "iPad", value: 17},
-  {group: "Q3'18", category: "Wearables", value: 15},
-  {group: "Q3'18", category: "Services", value: 35},
-
-  {group: "Q4'18", category: "iPhone", value: 120},
-  {group: "Q4'18", category: "Mac", value: 23},
-  {group: "Q4'18", category: "iPad", value: 14},
-  {group: "Q4'18", category: "Wearables", value: 14},
-  {group: "Q4'18", category: "Services", value: 35},
-];
-
+// Default story with Apple product data
 export const Default: Story = {
   args: {
-    data: appleSalesData,
-    yLabel: "Revenue ($B)",
-    yDomain: [0, 150],
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Apple Product Revenue by Year',
   },
 };
 
-export const DarkMode: Story = {
+// Sales by region
+export const SalesByRegion: Story = {
   args: {
-    data: appleSalesData,
-    yLabel: "Revenue ($B)",
-    yDomain: [0, 150],
-    darkMode: true,
-    title: "Apple Product Sales by Quarter",
-  },
-  parameters: {
-    backgrounds: {default: "dark"},
-  },
-};
-
-export const WithTitle: Story = {
-  args: {
-    data: appleSalesData,
-    title: "Apple Product Sales (2018)",
-    yLabel: "Revenue ($B)",
-    yDomain: [0, 150],
-  },
-};
-
-export const CustomColors: Story = {
-  args: {
-    data: appleSalesData,
-    yLabel: "Revenue ($B)",
-    yDomain: [0, 150],
+    data: salesByRegion,
+    width: 1000,
+    height: 500,
+    legend: true,
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Regional Sales Performance',
     colors: {
-      iPhone: "#FF6B6B",
-      Mac: "#4ECDC4",
-      iPad: "#45B7D1",
-      Wearables: "#FFA07A",
-      Services: "#98D8C8",
+      'North America': '#2E86AB',
+      'Europe': '#A23B72',
+      'Asia': '#F18F01',
     },
   },
 };
 
-export const NoLegend: Story = {
+// Dark mode
+export const DarkMode: Story = {
   args: {
-    data: appleSalesData,
-    yLabel: "Revenue ($B)",
-    yDomain: [0, 150],
-    legend: false,
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    darkMode: true,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Apple Product Revenue (Dark Mode)',
   },
 };
 
-export const CustomFormatting: Story = {
+// Without legend
+export const NoLegend: Story = {
   args: {
-    data: appleSalesData,
-    yLabel: "Revenue (Billions)",
-    yDomain: [0, 150],
-    yTickFormat: (d) => `$${d}B`,
-    inset: 0.3,
-    facetPadding: 0.2,
+    data: salesByRegion,
+    width: 1000,
+    height: 500,
+    legend: false,
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Sales Data Without Legend',
+  },
+};
+
+// Custom colors
+export const CustomColors: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Custom Color Scheme',
+    colors: {
+      iPhone: '#FF6B6B',
+      Mac: '#4ECDC4',
+      iPad: '#45B7D1',
+      Wearables: '#FFA07A',
+      Services: '#98D8C8',
+    },
+  },
+};
+
+// Tight spacing
+export const TightSpacing: Story = {
+  args: {
+    data: salesByRegion,
+    width: 1000,
+    height: 500,
+    legend: true,
+    barPadding: 0.05,
+    groupPadding: 0.1,
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Tight Bar Spacing',
+  },
+};
+
+// Wide spacing
+export const WideSpacing: Story = {
+  args: {
+    data: salesByRegion,
+    width: 1200,
+    height: 500,
+    legend: true,
+    barPadding: 0.3,
+    groupPadding: 0.4,
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Wide Bar Spacing',
+  },
+};
+
+// Custom Y-axis format
+export const CustomYAxisFormat: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue',
+    title: 'Custom Y-Axis Format',
+    yTickFormat: (value: number) => `$${value}B`,
+  },
+};
+
+// Custom Y-domain
+export const CustomYDomain: Story = {
+  args: {
+    data: salesByRegion,
+    width: 1000,
+    height: 500,
+    legend: true,
+    yDomain: [0, 250],
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Fixed Y-Axis Range (0-250)',
+  },
+};
+
+// No axis lines
+export const NoAxisLines: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    showXAxisLine: false,
+    showYAxisLine: false,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Chart Without Axis Lines',
+  },
+};
+
+// Custom margins
+export const CustomMargins: Story = {
+  args: {
+    data: salesByRegion,
+    width: 1000,
+    height: 500,
+    legend: true,
+    marginLeft: 100,
+    marginBottom: 100,
+    marginTop: 50,
+    marginRight: 50,
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Custom Margins',
+  },
+};
+
+// Styled labels
+export const StyledLabels: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Custom Label Styling',
+    xLabelStyle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      fill: '#5B9BD5',
+    },
+    yLabelStyle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      fill: '#ED7D31',
+    },
+  },
+};
+
+// More ticks
+export const MoreTicks: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    numberOfTicks: 10,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: '10 Y-Axis Ticks',
+  },
+};
+
+// Fewer ticks
+export const FewerTicks: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    numberOfTicks: 3,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: '3 Y-Axis Ticks',
+  },
+};
+
+// Small chart
+export const SmallChart: Story = {
+  args: {
+    data: salesByRegion,
+    width: 600,
+    height: 350,
+    legend: true,
+    xLabel: 'Quarter',
+    yLabel: 'Sales',
+    title: 'Compact Size Chart',
+  },
+};
+
+// Large chart
+export const LargeChart: Story = {
+  args: {
+    data: appleProductData,
+    width: 1600,
+    height: 700,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Large Size Chart',
+  },
+};
+
+// Minimal data (2 groups, 2 categories)
+export const MinimalData: Story = {
+  args: {
+    data: [
+      { group: 'A', category: 'X', value: 50 },
+      { group: 'A', category: 'Y', value: 75 },
+      { group: 'B', category: 'X', value: 60 },
+      { group: 'B', category: 'Y', value: 85 },
+    ],
+    width: 600,
+    height: 400,
+    legend: true,
+    xLabel: 'Group',
+    yLabel: 'Value',
+    title: 'Minimal Dataset',
+    colors: {
+      X: '#3498db',
+      Y: '#e74c3c',
+    },
   },
 };

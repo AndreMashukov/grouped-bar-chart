@@ -1,338 +1,462 @@
-import type {Meta, StoryObj} from "@storybook/react";
-import TimeSeriesBarChart from "./TimeSeriesBarChart";
-import {TimeSeriesDataItem} from "./ITimeSeriesBarChartProps";
+import type { Meta, StoryObj } from '@storybook/react';
+import TimeSeriesBarChart from './TimeSeriesBarChart';
+import { TimeSeriesDataItem } from './ITimeSeriesBarChartProps';
 
-const meta: Meta<typeof TimeSeriesBarChart> = {
-  title: "Charts/TimeSeriesBarChart",
+// Sample data for stories
+const energySalesData: TimeSeriesDataItem[] = [
+  { date: new Date('2023-01-01'), category: 'Sold CabE', value: 45 },
+  { date: new Date('2023-01-01'), category: 'Total CabE', value: 120 },
+  { date: new Date('2023-02-01'), category: 'Sold CabE', value: 52 },
+  { date: new Date('2023-02-01'), category: 'Total CabE', value: 125 },
+  { date: new Date('2023-03-01'), category: 'Sold CabE', value: 58 },
+  { date: new Date('2023-03-01'), category: 'Total CabE', value: 130 },
+  { date: new Date('2023-04-01'), category: 'Sold CabE', value: 65 },
+  { date: new Date('2023-04-01'), category: 'Total CabE', value: 135 },
+  { date: new Date('2023-05-01'), category: 'Sold CabE', value: 72 },
+  { date: new Date('2023-05-01'), category: 'Total CabE', value: 140 },
+  { date: new Date('2023-06-01'), category: 'Sold CabE', value: 78 },
+  { date: new Date('2023-06-01'), category: 'Total CabE', value: 145 },
+];
+
+const monthlySalesData: TimeSeriesDataItem[] = [
+  { date: new Date('2023-01-01'), category: 'Product A', value: 150 },
+  { date: new Date('2023-01-01'), category: 'Product B', value: 120 },
+  { date: new Date('2023-01-01'), category: 'Product C', value: 90 },
+  { date: new Date('2023-02-01'), category: 'Product A', value: 165 },
+  { date: new Date('2023-02-01'), category: 'Product B', value: 130 },
+  { date: new Date('2023-02-01'), category: 'Product C', value: 95 },
+  { date: new Date('2023-03-01'), category: 'Product A', value: 180 },
+  { date: new Date('2023-03-01'), category: 'Product B', value: 145 },
+  { date: new Date('2023-03-01'), category: 'Product C', value: 105 },
+  { date: new Date('2023-04-01'), category: 'Product A', value: 195 },
+  { date: new Date('2023-04-01'), category: 'Product B', value: 155 },
+  { date: new Date('2023-04-01'), category: 'Product C', value: 110 },
+];
+
+const quarterlyRevenueData: TimeSeriesDataItem[] = [
+  { date: new Date('2022-01-01'), category: 'Service Revenue', value: 450 },
+  { date: new Date('2022-01-01'), category: 'Product Revenue', value: 320 },
+  { date: new Date('2022-04-01'), category: 'Service Revenue', value: 480 },
+  { date: new Date('2022-04-01'), category: 'Product Revenue', value: 350 },
+  { date: new Date('2022-07-01'), category: 'Service Revenue', value: 520 },
+  { date: new Date('2022-07-01'), category: 'Product Revenue', value: 380 },
+  { date: new Date('2022-10-01'), category: 'Service Revenue', value: 560 },
+  { date: new Date('2022-10-01'), category: 'Product Revenue', value: 410 },
+  { date: new Date('2023-01-01'), category: 'Service Revenue', value: 600 },
+  { date: new Date('2023-01-01'), category: 'Product Revenue', value: 450 },
+];
+
+const meta = {
+  title: 'Charts/TimeSeriesBarChart',
   component: TimeSeriesBarChart,
   parameters: {
-    layout: "centered",
+    layout: 'centered',
   },
-  tags: ["autodocs"],
-};
+  tags: ['autodocs'],
+  argTypes: {
+    data: {
+      description: 'Array of data items with date, category, and value',
+      control: false,
+    },
+    width: {
+      control: { type: 'number', min: 400, max: 1600, step: 50 },
+      description: 'Width of the chart in pixels',
+    },
+    height: {
+      control: { type: 'number', min: 300, max: 800, step: 50 },
+      description: 'Height of the chart in pixels',
+    },
+    darkMode: {
+      control: 'boolean',
+      description: 'Enable dark mode styling',
+    },
+    legend: {
+      control: 'boolean',
+      description: 'Show/hide legend',
+    },
+    xLabel: {
+      control: 'text',
+      description: 'Label for X-axis',
+    },
+    yLabel: {
+      control: 'text',
+      description: 'Label for Y-axis',
+    },
+    title: {
+      control: 'text',
+      description: 'Chart title',
+    },
+    barWidthDays: {
+      control: { type: 'number', min: 1, max: 30, step: 1 },
+      description: 'Width of each bar in days',
+    },
+    barGapDays: {
+      control: { type: 'number', min: 0, max: 20, step: 1 },
+      description: 'Gap between bars in days',
+    },
+    numberOfTicks: {
+      control: { type: 'number', min: 3, max: 10, step: 1 },
+      description: 'Number of ticks on Y-axis',
+    },
+    showXAxisLine: {
+      control: 'boolean',
+      description: 'Show/hide X-axis line',
+    },
+    showYAxisLine: {
+      control: 'boolean',
+      description: 'Show/hide Y-axis line',
+    },
+    offsetLeft: {
+      control: { type: 'number', min: 0, max: 100, step: 5 },
+      description: 'Left offset for chart content',
+    },
+  },
+} satisfies Meta<typeof TimeSeriesBarChart>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Sample data: Monthly CabE data (Feb-Dec 2025)
-const monthlyCabEData: TimeSeriesDataItem[] = [
-  {date: new Date("2025-02-01"), category: "Sold CabE", value: 10500},
-  {date: new Date("2025-02-01"), category: "Total CabE", value: 20500},
-
-  {date: new Date("2025-03-01"), category: "Sold CabE", value: 12000},
-  {date: new Date("2025-03-01"), category: "Total CabE", value: 20200},
-
-  {date: new Date("2025-04-01"), category: "Sold CabE", value: 11800},
-  {date: new Date("2025-04-01"), category: "Total CabE", value: 21000},
-
-  {date: new Date("2025-05-01"), category: "Sold CabE", value: 13000},
-  {date: new Date("2025-05-01"), category: "Total CabE", value: 22500},
-
-  {date: new Date("2025-06-01"), category: "Sold CabE", value: 13500},
-  {date: new Date("2025-06-01"), category: "Total CabE", value: 23500},
-
-  {date: new Date("2025-07-01"), category: "Sold CabE", value: 12800},
-  {date: new Date("2025-07-01"), category: "Total CabE", value: 23000},
-
-  {date: new Date("2025-08-01"), category: "Sold CabE", value: 13200},
-  {date: new Date("2025-08-01"), category: "Total CabE", value: 24500},
-
-  {date: new Date("2025-09-01"), category: "Sold CabE", value: 13800},
-  {date: new Date("2025-09-01"), category: "Total CabE", value: 25000},
-
-  {date: new Date("2025-10-01"), category: "Sold CabE", value: 15500},
-  {date: new Date("2025-10-01"), category: "Total CabE", value: 26000},
-
-  {date: new Date("2025-11-01"), category: "Sold CabE", value: 15200},
-  {date: new Date("2025-11-01"), category: "Total CabE", value: 26500},
-
-  {date: new Date("2025-12-01"), category: "Sold CabE", value: 14800},
-  {date: new Date("2025-12-01"), category: "Total CabE", value: 27000},
-];
-
+// Default story with energy sales data
 export const Default: Story = {
   args: {
-    data: monthlyCabEData,
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Energy Sales Over Time',
   },
 };
 
+// Monthly sales with three products
+export const MonthlySales: Story = {
+  args: {
+    data: monthlySalesData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Monthly Product Sales',
+    colors: {
+      'Product A': '#2E86AB',
+      'Product B': '#A23B72',
+      'Product C': '#F18F01',
+    },
+  },
+};
+
+// Quarterly revenue
+export const QuarterlyRevenue: Story = {
+  args: {
+    data: quarterlyRevenueData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Quarter',
+    yLabel: 'Revenue (Thousands)',
+    title: 'Quarterly Revenue Comparison',
+    barWidthDays: 20,
+    barGapDays: 5,
+    colors: {
+      'Service Revenue': '#4CAF50',
+      'Product Revenue': '#2196F3',
+    },
+  },
+};
+
+// Dark mode
 export const DarkMode: Story = {
   args: {
-    data: monthlyCabEData,
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
+    data: energySalesData,
+    width: 1400,
+    height: 500,
     darkMode: true,
-    title: "Monthly CabE Comparison",
-  },
-  parameters: {
-    backgrounds: {default: "dark"},
-  },
-};
-
-export const WithTitle: Story = {
-  args: {
-    data: monthlyCabEData,
-    title: "CabE Sales Over Time (2025)",
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Energy Sales (Dark Mode)',
   },
 };
 
-export const CustomColors: Story = {
-  args: {
-    data: monthlyCabEData,
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
-    colors: {
-      "Sold CabE": "#E74C3C",
-      "Total CabE": "#3498DB",
-    },
-  },
-};
-
+// Without legend
 export const NoLegend: Story = {
   args: {
-    data: monthlyCabEData,
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
+    data: monthlySalesData,
+    width: 1200,
+    height: 500,
     legend: false,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Sales Data Without Legend',
   },
 };
 
-export const WiderBars: Story = {
+// Custom colors
+export const CustomColors: Story = {
   args: {
-    data: monthlyCabEData,
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
-    barWidthDays: 15,
-    barGapDays: 1,
-  },
-};
-
-// Example with fewer data points
-const quarterlyData: TimeSeriesDataItem[] = [
-  {date: new Date("2025-01-01"), category: "Revenue", value: 45000},
-  {date: new Date("2025-01-01"), category: "Cost", value: 32000},
-
-  {date: new Date("2025-04-01"), category: "Revenue", value: 48000},
-  {date: new Date("2025-04-01"), category: "Cost", value: 34000},
-
-  {date: new Date("2025-07-01"), category: "Revenue", value: 52000},
-  {date: new Date("2025-07-01"), category: "Cost", value: 36000},
-
-  {date: new Date("2025-10-01"), category: "Revenue", value: 50000},
-  {date: new Date("2025-10-01"), category: "Cost", value: 35000},
-];
-
-export const QuarterlyData: Story = {
-  args: {
-    data: quarterlyData,
-    xLabel: "Quarter",
-    yLabel: "Amount ($)",
-    yDomain: [0, 60000],
-    yTickFormat: (d) => `$${d / 1000}K`,
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Custom Color Scheme',
     colors: {
-      Revenue: "#27AE60",
-      Cost: "#E67E22",
-    },
-    barWidthDays: 20,
-  },
-};
-
-// Multiple categories example
-const productSalesData: TimeSeriesDataItem[] = [
-  {date: new Date("2025-01-01"), category: "Product A", value: 8500},
-  {date: new Date("2025-01-01"), category: "Product B", value: 6200},
-  {date: new Date("2025-01-01"), category: "Product C", value: 7800},
-
-  {date: new Date("2025-02-01"), category: "Product A", value: 9200},
-  {date: new Date("2025-02-01"), category: "Product B", value: 6800},
-  {date: new Date("2025-02-01"), category: "Product C", value: 8100},
-
-  {date: new Date("2025-03-01"), category: "Product A", value: 10500},
-  {date: new Date("2025-03-01"), category: "Product B", value: 7500},
-  {date: new Date("2025-03-01"), category: "Product C", value: 8900},
-
-  {date: new Date("2025-04-01"), category: "Product A", value: 11200},
-  {date: new Date("2025-04-01"), category: "Product B", value: 8200},
-  {date: new Date("2025-04-01"), category: "Product C", value: 9500},
-];
-
-export const ThreeCategories: Story = {
-  args: {
-    data: productSalesData,
-    title: "Product Sales Comparison",
-    xLabel: "Month",
-    yLabel: "Sales",
-    yDomain: [0, 12000],
-    yTickFormat: (d) => `${d / 1000}K`,
-    colors: {
-      "Product A": "#3498DB",
-      "Product B": "#E74C3C",
-      "Product C": "#F39C12",
-    },
-    barWidthDays: 8,
-    barGapDays: 1,
-  },
-};
-
-// Weekly data example
-const weeklyTrafficData: TimeSeriesDataItem[] = [
-  {date: new Date("2025-11-03"), category: "Mobile", value: 15000},
-  {date: new Date("2025-11-03"), category: "Desktop", value: 12000},
-
-  {date: new Date("2025-11-10"), category: "Mobile", value: 16500},
-  {date: new Date("2025-11-10"), category: "Desktop", value: 11500},
-
-  {date: new Date("2025-11-17"), category: "Mobile", value: 17200},
-  {date: new Date("2025-11-17"), category: "Desktop", value: 13000},
-
-  {date: new Date("2025-11-24"), category: "Mobile", value: 18000},
-  {date: new Date("2025-11-24"), category: "Desktop", value: 14500},
-
-  {date: new Date("2025-12-01"), category: "Mobile", value: 19500},
-  {date: new Date("2025-12-01"), category: "Desktop", value: 15200},
-];
-
-export const WeeklyData: Story = {
-  args: {
-    data: weeklyTrafficData,
-    title: "Weekly Traffic by Device",
-    xLabel: "Week",
-    yLabel: "Visits",
-    yDomain: [0, 22000],
-    yTickFormat: (d) => `${(d / 1000).toFixed(1)}K`,
-    colors: {
-      Mobile: "#9B59B6",
-      Desktop: "#34495E",
-    },
-    barWidthDays: 5,
-    barGapDays: 1,
-    xTickFormat: (date) => {
-      const month = date.toLocaleString("default", {month: "short"});
-      const day = date.getDate();
-      return `${month} ${day}`;
+      'Sold CabE': '#FF6B6B',
+      'Total CabE': '#4ECDC4',
     },
   },
 };
 
-// Custom margins example
-export const CustomMargins: Story = {
-  args: {
-    data: monthlyCabEData,
-    title: "Custom Spacing Example",
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
-    marginLeft: 80,
-    marginRight: 40,
-    marginTop: 40,
-    marginBottom: 100,
-    offsetLeft: 20,
-  },
-};
-
-// Narrow bars example
+// Narrow bars
 export const NarrowBars: Story = {
   args: {
-    data: monthlyCabEData,
-    title: "Narrow Bar Configuration",
-    xLabel: "mon_yr",
-    yLabel: "Sold CabE and Total CabE",
-    yDomain: [0, 30000],
-    yTickFormat: (d) => `${d / 1000}K`,
-    barWidthDays: 8,
-    barGapDays: 3,
+    data: monthlySalesData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    barWidthDays: 6,
+    barGapDays: 2,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Narrow Bar Width',
   },
 };
 
-// Custom tick format example
-const yearlyData: TimeSeriesDataItem[] = [
-  {date: new Date("2020-01-01"), category: "Sales", value: 120000},
-  {date: new Date("2020-01-01"), category: "Target", value: 110000},
-
-  {date: new Date("2021-01-01"), category: "Sales", value: 145000},
-  {date: new Date("2021-01-01"), category: "Target", value: 130000},
-
-  {date: new Date("2022-01-01"), category: "Sales", value: 162000},
-  {date: new Date("2022-01-01"), category: "Target", value: 155000},
-
-  {date: new Date("2023-01-01"), category: "Sales", value: 178000},
-  {date: new Date("2023-01-01"), category: "Target", value: 170000},
-
-  {date: new Date("2024-01-01"), category: "Sales", value: 195000},
-  {date: new Date("2024-01-01"), category: "Target", value: 190000},
-];
-
-export const YearlyComparison: Story = {
+// Wide bars with tight spacing
+export const WideBars: Story = {
   args: {
-    data: yearlyData,
-    title: "Annual Sales vs Target",
-    xLabel: "Year",
-    yLabel: "Revenue ($)",
-    yDomain: [0, 200000],
-    yTickFormat: (d) => `$${(d / 1000).toFixed(0)}K`,
-    xTickFormat: (date) => date.getFullYear().toString(),
-    colors: {
-      Sales: "#2ECC71",
-      Target: "#95A5A6",
-    },
-    barWidthDays: 60,
-    barGapDays: 10,
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    barWidthDays: 18,
+    barGapDays: 1,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Wide Bar Width',
   },
 };
 
-// Single category example
-const singleCategoryData: TimeSeriesDataItem[] = [
-  {date: new Date("2025-01-01"), category: "Revenue", value: 25000},
-  {date: new Date("2025-02-01"), category: "Revenue", value: 28000},
-  {date: new Date("2025-03-01"), category: "Revenue", value: 26500},
-  {date: new Date("2025-04-01"), category: "Revenue", value: 31000},
-  {date: new Date("2025-05-01"), category: "Revenue", value: 33000},
-  {date: new Date("2025-06-01"), category: "Revenue", value: 35000},
-];
-
-export const SingleCategory: Story = {
+// Custom Y-axis format
+export const CustomYAxisFormat: Story = {
   args: {
-    data: singleCategoryData,
-    title: "Monthly Revenue",
-    xLabel: "Month",
-    yLabel: "Revenue ($)",
-    yDomain: [0, 40000],
-    yTickFormat: (d) => `$${(d / 1000).toFixed(0)}K`,
-    colors: {
-      Revenue: "#1ABC9C",
-    },
-    legend: false,
-    barWidthDays: 15,
+    data: quarterlyRevenueData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Quarter',
+    yLabel: 'Revenue',
+    title: 'Custom Y-Axis Format',
+    yTickFormat: (value: number) => `$${value}K`,
   },
 };
 
-// Minimal example
-export const Minimal: Story = {
+// Custom X-axis format
+export const CustomXAxisFormat: Story = {
+  args: {
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    xLabel: 'Date',
+    yLabel: 'Energy (CabE)',
+    title: 'Custom X-Axis Format',
+    xTickFormat: (date: Date) => {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${months[date.getMonth()]} '${date.getFullYear().toString().slice(-2)}`;
+    },
+  },
+};
+
+// Custom Y-domain
+export const CustomYDomain: Story = {
+  args: {
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    yDomain: [0, 200],
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Fixed Y-Axis Range (0-200)',
+  },
+};
+
+// No axis lines
+export const NoAxisLines: Story = {
+  args: {
+    data: monthlySalesData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    showXAxisLine: false,
+    showYAxisLine: false,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Chart Without Axis Lines',
+  },
+};
+
+// Custom margins
+export const CustomMargins: Story = {
+  args: {
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    marginLeft: 100,
+    marginBottom: 120,
+    marginTop: 50,
+    marginRight: 50,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Custom Margins',
+  },
+};
+
+// Styled labels
+export const StyledLabels: Story = {
+  args: {
+    data: monthlySalesData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Custom Label Styling',
+    xLabelStyle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      fill: '#5B9BD5',
+    },
+    yLabelStyle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      fill: '#ED7D31',
+    },
+  },
+};
+
+// More ticks
+export const MoreTicks: Story = {
+  args: {
+    data: quarterlyRevenueData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    numberOfTicks: 10,
+    xLabel: 'Quarter',
+    yLabel: 'Revenue (Thousands)',
+    title: '10 Y-Axis Ticks',
+  },
+};
+
+// Fewer ticks
+export const FewerTicks: Story = {
+  args: {
+    data: quarterlyRevenueData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    numberOfTicks: 3,
+    xLabel: 'Quarter',
+    yLabel: 'Revenue (Thousands)',
+    title: '3 Y-Axis Ticks',
+  },
+};
+
+// Small chart
+export const SmallChart: Story = {
+  args: {
+    data: energySalesData,
+    width: 800,
+    height: 350,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Energy',
+    title: 'Compact Size Chart',
+  },
+};
+
+// Large chart
+export const LargeChart: Story = {
+  args: {
+    data: monthlySalesData,
+    width: 1600,
+    height: 700,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Large Size Chart',
+  },
+};
+
+// Minimal data (2 dates, 2 categories)
+export const MinimalData: Story = {
   args: {
     data: [
-      {date: new Date("2025-01-01"), category: "A", value: 100},
-      {date: new Date("2025-01-01"), category: "B", value: 150},
-      {date: new Date("2025-02-01"), category: "A", value: 120},
-      {date: new Date("2025-02-01"), category: "B", value: 180},
-      {date: new Date("2025-03-01"), category: "A", value: 140},
-      {date: new Date("2025-03-01"), category: "B", value: 160},
+      { date: new Date('2023-01-01'), category: 'Category A', value: 50 },
+      { date: new Date('2023-01-01'), category: 'Category B', value: 75 },
+      { date: new Date('2023-02-01'), category: 'Category A', value: 60 },
+      { date: new Date('2023-02-01'), category: 'Category B', value: 85 },
     ],
+    width: 800,
+    height: 400,
+    legend: true,
+    xLabel: 'Date',
+    yLabel: 'Value',
+    title: 'Minimal Dataset',
+    colors: {
+      'Category A': '#3498db',
+      'Category B': '#e74c3c',
+    },
+  },
+};
+
+// With offset
+export const WithOffset: Story = {
+  args: {
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    offsetLeft: 50,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Chart With Left Offset',
+  },
+};
+
+// Long time range
+export const LongTimeRange: Story = {
+  args: {
+    data: [
+      { date: new Date('2021-01-01'), category: 'Sales', value: 100 },
+      { date: new Date('2021-01-01'), category: 'Target', value: 120 },
+      { date: new Date('2021-06-01'), category: 'Sales', value: 110 },
+      { date: new Date('2021-06-01'), category: 'Target', value: 125 },
+      { date: new Date('2022-01-01'), category: 'Sales', value: 125 },
+      { date: new Date('2022-01-01'), category: 'Target', value: 130 },
+      { date: new Date('2022-06-01'), category: 'Sales', value: 140 },
+      { date: new Date('2022-06-01'), category: 'Target', value: 140 },
+      { date: new Date('2023-01-01'), category: 'Sales', value: 150 },
+      { date: new Date('2023-01-01'), category: 'Target', value: 150 },
+      { date: new Date('2023-06-01'), category: 'Sales', value: 165 },
+      { date: new Date('2023-06-01'), category: 'Target', value: 155 },
+    ],
+    width: 1400,
+    height: 500,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Performance',
+    title: 'Multi-Year Comparison',
+    barWidthDays: 15,
+    colors: {
+      Sales: '#00BCD4',
+      Target: '#FF9800',
+    },
   },
 };
