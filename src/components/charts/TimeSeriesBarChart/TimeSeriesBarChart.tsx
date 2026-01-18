@@ -32,7 +32,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   barWidthDays = 12,
   barGapDays = 2,
   title,
-  offsetLeft = 0,
+  offsetLeft = 10,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -59,7 +59,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     d3.select(svgRef.current).selectAll("*").remove();
 
     // Calculate inner dimensions
-    const innerWidth = finalWidth - marginLeft - marginRight - offsetLeft;
+    // innerWidth is the full chart area width (bars can use from offsetLeft to innerWidth)
+    const innerWidth = finalWidth - marginLeft - marginRight;
     const innerHeight = finalHeight - marginTop - marginBottom;
 
     // Extract unique categories
@@ -98,15 +99,15 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
       .attr("height", finalHeight)
       .style("background", darkMode ? "#2C3142" : "#FFFFFF");
 
-    // Create main group with margins
+    // Create main group with margins (Y-axis will be at marginLeft)
     const g = svg.append("g")
-      .attr("transform", `translate(${marginLeft + offsetLeft},${marginTop})`);
+      .attr("transform", `translate(${marginLeft},${marginTop})`);
 
-    // X scale (time scale)
+    // X scale (time scale) - starts at offsetLeft to create gap between Y-axis and first bar
     const allDates = rectData.flatMap(d => [d.x1, d.x2]);
     const xScale = d3.scaleTime()
       .domain(d3.extent(allDates) as [Date, Date])
-      .range([0, innerWidth]);
+      .range([offsetLeft, innerWidth]);
 
     // Y scale
     const yMax = yDomain ? yDomain[1] : (d3.max(data, d => d.value) || 0);
