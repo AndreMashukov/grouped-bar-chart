@@ -20,20 +20,21 @@ const monthlyCabEData: TimeSeriesDataItem[] = [
 
 function App() {
   const [count, setCount] = useState(0)
-  const [offsetLeft, setOffsetLeft] = useState(10)
+  const [barGapDays, setBarGapDays] = useState(2)
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>Grouped Bar Chart App</h1>
         <div className="card" style={{ marginBottom: '20px' }}>
-          <label>offsetLeft: {offsetLeft}</label>
+          <label>barGapDays: {barGapDays}</label>
           <input 
             type="range" 
             min="0" 
-            max="100" 
-            value={offsetLeft} 
-            onChange={(e) => setOffsetLeft(Number(e.target.value))}
+            max="15" 
+            step="0.5"
+            value={barGapDays} 
+            onChange={(e) => setBarGapDays(Number(e.target.value))}
             style={{ width: '200px', marginLeft: '10px' }}
           />
         </div>
@@ -44,7 +45,8 @@ function App() {
             yLabel="CabE Values"
             yDomain={[0, 30000]}
             yTickFormat={(d) => `${d / 1000}K`}
-            offsetLeft={offsetLeft}
+            offsetLeft={10}
+            barGapDays={barGapDays}
             width={1000}
             height={400}
           />

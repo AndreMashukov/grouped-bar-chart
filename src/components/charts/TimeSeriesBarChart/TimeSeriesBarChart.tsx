@@ -30,7 +30,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   yTickFormat,
   xTickFormat,
   barWidthDays = 12,
-  barGapDays = 2,
+  barGapDays = 0,
   title,
   offsetLeft = 10,
 }) => {
@@ -137,20 +137,44 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     // Remove grid domain line
     g.select(".grid .domain").remove();
 
-    // Draw X-axis
-    const xAxis = xTickFormat 
-      ? d3.axisBottom(xScale).tickFormat(xTickFormat as any)
-      : d3.axisBottom(xScale).tickFormat(d3.utcFormat("%b-%y") as any);
+    // Get unique dates for X-axis labels (center of each group)
+    const uniqueDates = Array.from(new Set(data.map(d => d.date.getTime())))
+      .map(time => new Date(time))
+      .sort((a, b) => a.getTime() - b.getTime());
 
+    // Draw X-axis line only (no ticks)
     const xAxisGroup = g.append("g")
-      .attr("transform", `translate(0,${innerHeight})`)
-      .call(xAxis);
+      .attr("transform", `translate(0,${innerHeight})`);
 
-    xAxisGroup.selectAll("line, path")
+    // Add axis line
+    xAxisGroup.append("line")
+      .attr("x1", 0)
+      .attr("x2", innerWidth)
       .attr("stroke", darkMode ? "#E0E0E0" : "#666");
 
-    xAxisGroup.selectAll("text")
-      .attr("fill", darkMode ? "#E0E0E0" : "#333");
+    // Calculate center position for each date group and add labels
+    const defaultXTickFormat = d3.utcFormat("%b-%y");
+    const formatFn = xTickFormat || defaultXTickFormat;
+
+    uniqueDates.forEach(date => {
+      // Find the bars for this date to calculate center
+      const barsForDate = rectData.filter(d => d.date.getTime() === date.getTime());
+      if (barsForDate.length === 0) return;
+
+      // Get the leftmost x1 and rightmost x2 of the group
+      const groupX1 = Math.min(...barsForDate.map(d => xScale(d.x1)));
+      const groupX2 = Math.max(...barsForDate.map(d => xScale(d.x2)));
+      const centerX = (groupX1 + groupX2) / 2;
+
+      // Add label at center (no tick mark)
+      xAxisGroup.append("text")
+        .attr("x", centerX)
+        .attr("y", 20)
+        .attr("text-anchor", "middle")
+        .attr("fill", darkMode ? "#E0E0E0" : "#333")
+        .style("font-size", "12px")
+        .text(formatFn(date));
+    });
 
     // Draw Y-axis
     const yAxis = yTickFormat
