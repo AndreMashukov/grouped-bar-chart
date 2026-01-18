@@ -40,9 +40,21 @@ export interface TimeSeriesBarChartProps {
   xLabel?: string | null;
 
   /**
+   * Style object for X-axis label
+   * @example { fontSize: '16px', fontWeight: 'bold', fill: '#333' }
+   */
+  xLabelStyle?: React.CSSProperties;
+
+  /**
    * Y-axis label
    */
   yLabel?: string | null;
+
+  /**
+   * Style object for Y-axis label
+   * @example { fontSize: '16px', fontWeight: 'bold', fill: '#333' }
+   */
+  yLabelStyle?: React.CSSProperties;
 
   /**
    * Dark mode styling

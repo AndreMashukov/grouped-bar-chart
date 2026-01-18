@@ -90,7 +90,9 @@ function App() {
           <TimeSeriesBarChart
             data={monthlyCabEData}
             xLabel="Month"
+            xLabelStyle={{ fontSize: '16px', fontWeight: 'bold', fill: '#2563eb' }}
             yLabel="CabE Values"
+            yLabelStyle={{ fontSize: '16px', fontWeight: 'bold', fill: '#dc2626' }}
             yDomain={[0, 30000]}
             yTickFormat={(d) => `${d / 1000}K`}
             offsetLeft={10}

@@ -26,7 +26,9 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   colors = DEFAULT_COLORS,
   legend = true,
   xLabel,
+  xLabelStyle,
   yLabel,
+  yLabelStyle,
   darkMode = false,
   yDomain,
   marginLeft = 60,
@@ -202,10 +204,12 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
       .attr("transform", `translate(${marginLeft},${marginTop})`);
 
     // Draw grid (horizontal lines) - use shape-rendering for crisp lines
+    // Match grid lines with visible Y-axis ticks
     const gridGroup = g.append("g")
       .attr("class", "grid")
       .call(
         d3.axisLeft(yScale)
+          .ticks(numberOfTicks)
           .tickSize(-innerWidth)
           .tickFormat(() => "")
       );
@@ -272,7 +276,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
 
     // Add Y-axis label
     if (yLabel !== undefined && yLabel !== null) {
-      svg.append("text")
+      const yLabelElement = svg.append("text")
         .attr("transform", "rotate(-90)")
         .attr("x", -finalHeight / 2)
         .attr("y", 15)
@@ -280,17 +284,43 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
         .attr("fill", darkMode ? "#E0E0E0" : "#333")
         .style("font-size", "14px")
         .text(yLabel);
+      
+      // Apply custom styles if provided
+      if (yLabelStyle) {
+        Object.entries(yLabelStyle).forEach(([key, value]) => {
+          // Convert camelCase to kebab-case for CSS properties
+          const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+          if (key === 'fill' || key === 'stroke') {
+            yLabelElement.attr(key, value as string);
+          } else {
+            yLabelElement.style(cssKey, value as string);
+          }
+        });
+      }
     }
 
     // Add X-axis label
     if (xLabel !== undefined && xLabel !== null) {
-      svg.append("text")
+      const xLabelElement = svg.append("text")
         .attr("x", finalWidth / 2)
         .attr("y", marginTop + innerHeight + xTickLabelSpace + 15)
         .attr("text-anchor", "middle")
         .attr("fill", darkMode ? "#E0E0E0" : "#333")
         .style("font-size", "14px")
         .text(xLabel);
+      
+      // Apply custom styles if provided
+      if (xLabelStyle) {
+        Object.entries(xLabelStyle).forEach(([key, value]) => {
+          // Convert camelCase to kebab-case for CSS properties
+          const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+          if (key === 'fill' || key === 'stroke') {
+            xLabelElement.attr(key, value as string);
+          } else {
+            xLabelElement.style(cssKey, value as string);
+          }
+        });
+      }
     }
 
     // Create tooltip - reuse existing or create new
@@ -410,7 +440,9 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     darkMode,
     legend,
     xLabel,
+    xLabelStyle,
     yLabel,
+    yLabelStyle,
     showXAxisLine,
     showYAxisLine,
     yTickFormat,
