@@ -4,6 +4,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import {CategoricalBarChartProps, CategoricalDataItem} from "./ICategoricalBarChartProps";
 import useResponsiveDimensions from "../shared/hooks/useResponsiveDimensions";
+import FlexibleTooltip, {TooltipDataPoint} from "../shared/FlexibleTooltip";
 
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 500;
@@ -38,10 +39,13 @@ const CategoricalBarChart: React.FC<CategoricalBarChartProps> = ({
   showXAxisLine = true,
   showYAxisLine = true,
   title,
+  customTooltipElement,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> | null>(null);
+  const tooltipDataRef = useRef<TooltipDataPoint[] | null>(null);
+  const mousePositionRef = useRef<{x: number; y: number}>({x: 0, y: 0});
+  const containerRectRef = useRef<DOMRect | null>(null);
 
   // Use responsive dimensions hook
   const {calculatedDimensions} = useResponsiveDimensions({
@@ -118,36 +122,44 @@ const CategoricalBarChart: React.FC<CategoricalBarChartProps> = ({
   // Memoized tooltip handlers
   const handleMouseOver = useCallback(function(
     this: SVGRectElement,
-    _event: MouseEvent,
+    event: MouseEvent,
     d: CategoricalDataItem
   ) {
     d3.select(this).attr("opacity", 0.8);
     
+    // Update container rect ref for tooltip positioning
+    if (containerRef.current) {
+      containerRectRef.current = containerRef.current.getBoundingClientRect();
+    }
+    
     const valueStr = yTickFormat ? yTickFormat(d.value) : d.value;
     
-    if (tooltipRef.current) {
-      tooltipRef.current
-        .style("visibility", "visible")
-        .html(`
-          <strong>${d.group}</strong><br/>
-          ${d.category}: ${valueStr}
-        `);
+    // Update tooltip data ref
+    tooltipDataRef.current = [{
+      label: d.category,
+      value: typeof valueStr === 'string' ? parseFloat(valueStr) || d.value : valueStr,
+      color: colorScale(d.category),
+      category: d.category,
+      group: d.group,
+    }];
+    
+    // Update mouse position
+    if (containerRef.current) {
+      const [x, y] = d3.pointer(event, containerRef.current);
+      mousePositionRef.current = {x, y};
     }
-  }, [yTickFormat]);
+  }, [yTickFormat, colorScale]);
 
   const handleMouseMove = useCallback(function(event: MouseEvent) {
-    if (tooltipRef.current) {
-      tooltipRef.current
-        .style("top", (event.pageY - 10) + "px")
-        .style("left", (event.pageX + 10) + "px");
+    if (containerRef.current) {
+      const [x, y] = d3.pointer(event, containerRef.current);
+      mousePositionRef.current = {x, y};
     }
   }, []);
 
   const handleMouseOut = useCallback(function(this: SVGRectElement) {
     d3.select(this).attr("opacity", 1);
-    if (tooltipRef.current) {
-      tooltipRef.current.style("visibility", "hidden");
-    }
+    tooltipDataRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -279,24 +291,6 @@ const CategoricalBarChart: React.FC<CategoricalBarChartProps> = ({
       }
     }
 
-    // Create tooltip
-    d3.selectAll(".d3-tooltip-categorical").remove();
-    const tooltip = d3.select("body")
-      .append("div")
-      .attr("class", "d3-tooltip-categorical")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background-color", darkMode ? "#2C3142" : "#fff")
-      .style("color", darkMode ? "#E0E0E0" : "#333")
-      .style("border", `1px solid ${darkMode ? "#404552" : "#ddd"}`)
-      .style("padding", "8px")
-      .style("border-radius", "4px")
-      .style("font-size", "12px")
-      .style("pointer-events", "none")
-      .style("z-index", "1000");
-    
-    tooltipRef.current = tooltip;
-
     // Draw bars using join() for efficient updates
     g.selectAll<SVGRectElement, CategoricalDataItem>(".bar")
       .data(data, d => `${d.group}-${d.category}`)
@@ -374,7 +368,7 @@ const CategoricalBarChart: React.FC<CategoricalBarChartProps> = ({
 
     // Cleanup
     return () => {
-      d3.selectAll(".d3-tooltip-categorical").remove();
+      tooltipDataRef.current = null;
     };
   }, [
     data,
@@ -426,7 +420,15 @@ const CategoricalBarChart: React.FC<CategoricalBarChartProps> = ({
           {title}
         </Typography>
       )}
-      <svg ref={svgRef} />
+      <FlexibleTooltip
+        tooltipDataRef={tooltipDataRef}
+        mousePositionRef={mousePositionRef}
+        containerRectRef={containerRectRef}
+        darkMode={darkMode}
+        customTooltipElement={customTooltipElement}
+      >
+        <svg ref={svgRef} />
+      </FlexibleTooltip>
     </Box>
   );
 };

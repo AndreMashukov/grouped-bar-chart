@@ -1,6 +1,7 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import CategoricalBarChart from './CategoricalBarChart';
-import { CategoricalDataItem } from './ICategoricalBarChartProps';
+import { CategoricalDataItem, CustomTooltipProps } from './ICategoricalBarChartProps';
 
 // Sample data for stories
 const appleProductData: CategoricalDataItem[] = [
@@ -371,5 +372,144 @@ export const MinimalData: Story = {
       X: '#3498db',
       Y: '#e74c3c',
     },
+  },
+};
+
+// Custom Tooltip as a React Component
+const CustomTooltipComponent: React.FC<CustomTooltipProps> = ({ dataPoints, group }) => (
+  <div
+    style={{
+      background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+      color: 'white',
+      padding: '12px 16px',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      minWidth: '140px',
+    }}
+  >
+    <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>
+      📊 {group}
+    </div>
+    {dataPoints.map((point, index) => (
+      <div
+        key={index}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '4px',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: point.color,
+              borderRadius: '50%',
+              border: '2px solid white',
+            }}
+          />
+          {point.label}
+        </span>
+        <span style={{ fontWeight: 'bold' }}>{point.value}</span>
+      </div>
+    ))}
+  </div>
+);
+
+export const WithCustomTooltipComponent: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Custom Tooltip Component',
+    customTooltipElement: CustomTooltipComponent,
+  },
+};
+
+// Custom Tooltip as a Render Function
+export const WithCustomTooltipRenderFunction: Story = {
+  args: {
+    data: salesByRegion,
+    width: 1000,
+    height: 500,
+    legend: true,
+    xLabel: 'Quarter',
+    yLabel: 'Sales (Millions)',
+    title: 'Custom Tooltip (Render Function)',
+    colors: {
+      'North America': '#2E86AB',
+      'Europe': '#A23B72',
+      'Asia': '#F18F01',
+    },
+    customTooltipElement: ({ dataPoints, group }: CustomTooltipProps) => (
+      <div
+        style={{
+          backgroundColor: '#2c3e50',
+          color: '#ecf0f1',
+          padding: '10px 14px',
+          borderRadius: '6px',
+          border: '2px solid #3498db',
+          fontSize: '13px',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#3498db' }}>
+          Quarter: {group}
+        </div>
+        {dataPoints.map((point, i) => (
+          <div key={i} style={{ padding: '3px 0' }}>
+            <span style={{ color: point.color }}>■</span> {point.label}: <strong>${point.value}M</strong>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+};
+
+// Custom Tooltip in Dark Mode
+export const CustomTooltipDarkMode: Story = {
+  args: {
+    data: appleProductData,
+    width: 1200,
+    height: 500,
+    darkMode: true,
+    legend: true,
+    xLabel: 'Year',
+    yLabel: 'Revenue (Billions USD)',
+    title: 'Custom Tooltip (Dark Mode)',
+    customTooltipElement: ({ dataPoints, group }: CustomTooltipProps) => (
+      <div
+        style={{
+          backgroundColor: 'rgba(20, 20, 30, 0.95)',
+          color: '#fff',
+          padding: '12px',
+          borderRadius: '8px',
+          border: '1px solid #555',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{ fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
+          📈 Fiscal Year {group}
+        </div>
+        {dataPoints.map((point, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+            <div
+              style={{
+                width: '14px',
+                height: '14px',
+                backgroundColor: point.color,
+                borderRadius: '3px',
+              }}
+            />
+            <span>{point.label}:</span>
+            <span style={{ fontWeight: 'bold' }}>${point.value}B</span>
+          </div>
+        ))}
+      </div>
+    ),
   },
 };

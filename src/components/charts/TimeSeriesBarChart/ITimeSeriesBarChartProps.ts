@@ -1,4 +1,7 @@
 import {ResponsiveDimensions} from "../shared/types";
+import {CustomTooltipProps} from "../shared/FlexibleTooltip";
+
+export type {CustomTooltipProps};
 
 export interface TimeSeriesDataItem {
   date: Date;
@@ -141,4 +144,13 @@ export interface TimeSeriesBarChartProps {
    * @default true
    */
   showYAxisLine?: boolean;
+
+  /**
+   * Custom tooltip element or component
+   * Can be a React element, a component that receives CustomTooltipProps, or a render function
+   */
+  customTooltipElement?:
+    | React.ReactNode
+    | React.ComponentType<CustomTooltipProps>
+    | ((props: CustomTooltipProps) => React.ReactNode);
 }

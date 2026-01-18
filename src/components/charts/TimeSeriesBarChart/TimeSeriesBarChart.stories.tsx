@@ -1,6 +1,7 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import TimeSeriesBarChart from './TimeSeriesBarChart';
-import { TimeSeriesDataItem } from './ITimeSeriesBarChartProps';
+import { TimeSeriesDataItem, CustomTooltipProps } from './ITimeSeriesBarChartProps';
 
 // Sample data for stories
 const energySalesData: TimeSeriesDataItem[] = [
@@ -458,5 +459,148 @@ export const LongTimeRange: Story = {
       Sales: '#00BCD4',
       Target: '#FF9800',
     },
+  },
+};
+
+// Custom Tooltip as a React Component
+const CustomTooltipComponent: React.FC<CustomTooltipProps> = ({ dataPoints, date }) => (
+  <div
+    style={{
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      padding: '12px 16px',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      minWidth: '150px',
+    }}
+  >
+    <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>
+      📅 {date?.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+    </div>
+    {dataPoints.map((point, index) => (
+      <div
+        key={index}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '4px',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: point.color,
+              borderRadius: '50%',
+              border: '2px solid white',
+            }}
+          />
+          {point.label}
+        </span>
+        <span style={{ fontWeight: 'bold' }}>{point.value}</span>
+      </div>
+    ))}
+  </div>
+);
+
+export const WithCustomTooltipComponent: Story = {
+  args: {
+    data: energySalesData,
+    width: 1400,
+    height: 500,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Energy (CabE)',
+    title: 'Custom Tooltip Component',
+    customTooltipElement: CustomTooltipComponent,
+  },
+};
+
+// Custom Tooltip as a Render Function
+export const WithCustomTooltipRenderFunction: Story = {
+  args: {
+    data: monthlySalesData,
+    width: 1200,
+    height: 500,
+    legend: true,
+    xLabel: 'Month',
+    yLabel: 'Sales (Units)',
+    title: 'Custom Tooltip (Render Function)',
+    colors: {
+      'Product A': '#2E86AB',
+      'Product B': '#A23B72',
+      'Product C': '#F18F01',
+    },
+    customTooltipElement: ({ dataPoints, date }: CustomTooltipProps) => (
+      <div
+        style={{
+          backgroundColor: '#1a1a2e',
+          color: '#eee',
+          padding: '10px 14px',
+          borderRadius: '6px',
+          border: '1px solid #4a4a6a',
+          fontSize: '13px',
+        }}
+      >
+        <div style={{ borderBottom: '1px solid #4a4a6a', paddingBottom: '6px', marginBottom: '6px' }}>
+          🗓 {date?.toLocaleDateString()}
+        </div>
+        {dataPoints.map((point, i) => (
+          <div key={i} style={{ padding: '3px 0' }}>
+            <span style={{ color: point.color }}>●</span> {point.label}: <strong>{point.value} units</strong>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+};
+
+// Custom Tooltip in Dark Mode
+export const CustomTooltipDarkMode: Story = {
+  args: {
+    data: quarterlyRevenueData,
+    width: 1200,
+    height: 500,
+    darkMode: true,
+    legend: true,
+    xLabel: 'Quarter',
+    yLabel: 'Revenue (Thousands)',
+    title: 'Custom Tooltip (Dark Mode)',
+    colors: {
+      'Service Revenue': '#4CAF50',
+      'Product Revenue': '#2196F3',
+    },
+    customTooltipElement: ({ dataPoints, date }: CustomTooltipProps) => (
+      <div
+        style={{
+          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+          color: '#fff',
+          padding: '12px',
+          borderRadius: '8px',
+          border: '1px solid #444',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{ fontWeight: 600, marginBottom: '8px' }}>
+          {date?.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        </div>
+        {dataPoints.map((point, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
+                backgroundColor: point.color,
+                borderRadius: '4px',
+              }}
+            />
+            <span>{point.label}:</span>
+            <span style={{ fontWeight: 'bold' }}>${point.value}K</span>
+          </div>
+        ))}
+      </div>
+    ),
   },
 };

@@ -4,6 +4,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import {TimeSeriesBarChartProps, TimeSeriesDataItem} from "./ITimeSeriesBarChartProps";
 import useResponsiveDimensions from "../shared/hooks/useResponsiveDimensions";
+import FlexibleTooltip, {TooltipDataPoint} from "../shared/FlexibleTooltip";
 
 const DEFAULT_WIDTH = 1400;
 const DEFAULT_HEIGHT = 500;
@@ -44,10 +45,13 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   offsetLeft = 10,
   showXAxisLine = true,
   showYAxisLine = true,
+  customTooltipElement,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> | null>(null);
+  const tooltipDataRef = useRef<TooltipDataPoint[] | null>(null);
+  const mousePositionRef = useRef<{x: number; y: number}>({x: 0, y: 0});
+  const containerRectRef = useRef<DOMRect | null>(null);
 
   // Use responsive dimensions hook
   const {calculatedDimensions} = useResponsiveDimensions({
@@ -148,39 +152,44 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   // Memoized tooltip handlers for better performance
   const handleMouseOver = useCallback(function(
     this: SVGRectElement,
-    _event: MouseEvent,
+    event: MouseEvent,
     d: RectDataItem
   ) {
     d3.select(this).attr("opacity", 0.8);
     
-    const dateStr = xTickFormat 
-      ? xTickFormat(d.date) 
-      : d3.utcFormat("%b %Y")(d.date);
+    // Update container rect ref for tooltip positioning
+    if (containerRef.current) {
+      containerRectRef.current = containerRef.current.getBoundingClientRect();
+    }
+    
     const valueStr = yTickFormat ? yTickFormat(d.value) : d.value;
     
-    if (tooltipRef.current) {
-      tooltipRef.current
-        .style("visibility", "visible")
-        .html(`
-          <strong>${dateStr}</strong><br/>
-          ${d.category}: ${valueStr}
-        `);
+    // Update tooltip data ref
+    tooltipDataRef.current = [{
+      label: d.category,
+      value: typeof valueStr === 'string' ? parseFloat(valueStr) || d.value : valueStr,
+      color: colorScale(d.category),
+      category: d.category,
+      date: d.date,
+    }];
+    
+    // Update mouse position
+    if (containerRef.current) {
+      const [x, y] = d3.pointer(event, containerRef.current);
+      mousePositionRef.current = {x, y};
     }
-  }, [xTickFormat, yTickFormat]);
+  }, [yTickFormat, colorScale]);
 
   const handleMouseMove = useCallback(function(event: MouseEvent) {
-    if (tooltipRef.current) {
-      tooltipRef.current
-        .style("top", (event.pageY - 10) + "px")
-        .style("left", (event.pageX + 10) + "px");
+    if (containerRef.current) {
+      const [x, y] = d3.pointer(event, containerRef.current);
+      mousePositionRef.current = {x, y};
     }
   }, []);
 
   const handleMouseOut = useCallback(function(this: SVGRectElement) {
     d3.select(this).attr("opacity", 1);
-    if (tooltipRef.current) {
-      tooltipRef.current.style("visibility", "hidden");
-    }
+    tooltipDataRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -323,25 +332,6 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
       }
     }
 
-    // Create tooltip - reuse existing or create new
-    d3.selectAll(".d3-tooltip-timeseries").remove();
-    const tooltip = d3.select("body")
-      .append("div")
-      .attr("class", "d3-tooltip-timeseries")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background-color", darkMode ? "#2C3142" : "#fff")
-      .style("color", darkMode ? "#E0E0E0" : "#333")
-      .style("border", `1px solid ${darkMode ? "#404552" : "#ddd"}`)
-      .style("padding", "8px")
-      .style("border-radius", "4px")
-      .style("font-size", "12px")
-      .style("pointer-events", "none")
-      .style("z-index", "1000");
-    
-    // Store tooltip ref for memoized handlers
-    tooltipRef.current = tooltip;
-
     // Draw bars using join() for efficient updates
     g.selectAll<SVGRectElement, RectDataItem>(".bar")
       .data(rectData, d => `${d.date.getTime()}-${d.category}`)
@@ -419,7 +409,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
 
     // Cleanup
     return () => {
-      d3.selectAll(".d3-tooltip-timeseries").remove();
+      tooltipDataRef.current = null;
     };
   }, [
     // Core data dependencies
@@ -475,7 +465,15 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
           {title}
         </Typography>
       )}
-      <svg ref={svgRef} />
+      <FlexibleTooltip
+        tooltipDataRef={tooltipDataRef}
+        mousePositionRef={mousePositionRef}
+        containerRectRef={containerRectRef}
+        darkMode={darkMode}
+        customTooltipElement={customTooltipElement}
+      >
+        <svg ref={svgRef} />
+      </FlexibleTooltip>
     </Box>
   );
 };

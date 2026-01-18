@@ -1,4 +1,7 @@
 import {ResponsiveDimensions} from "../shared/types";
+import {CustomTooltipProps} from "../shared/FlexibleTooltip";
+
+export type {CustomTooltipProps};
 
 export interface CategoricalDataItem {
   group: string;
@@ -130,4 +133,13 @@ export interface CategoricalBarChartProps {
    * Title for the chart (optional)
    */
   title?: string;
+
+  /**
+   * Custom tooltip element or component
+   * Can be a React element, a component that receives CustomTooltipProps, or a render function
+   */
+  customTooltipElement?:
+    | React.ReactNode
+    | React.ComponentType<CustomTooltipProps>
+    | ((props: CustomTooltipProps) => React.ReactNode);
 }
