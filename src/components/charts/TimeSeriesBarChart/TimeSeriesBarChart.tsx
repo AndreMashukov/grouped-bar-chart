@@ -35,6 +35,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
   marginRight = 20,
   yTickFormat,
   xTickFormat,
+  numberOfTicks = 5,
   barWidthDays = 12,
   barGapDays = 0,
   title,
@@ -253,8 +254,8 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
 
     // Draw Y-axis
     const yAxis = yTickFormat
-      ? d3.axisLeft(yScale).tickFormat(yTickFormat as any)
-      : d3.axisLeft(yScale);
+      ? d3.axisLeft(yScale).ticks(numberOfTicks).tickFormat(yTickFormat as any)
+      : d3.axisLeft(yScale).ticks(numberOfTicks);
 
     const yAxisGroup = g.append("g")
       .call(yAxis);
@@ -413,6 +414,7 @@ const TimeSeriesBarChart: React.FC<TimeSeriesBarChartProps> = ({
     showXAxisLine,
     showYAxisLine,
     yTickFormat,
+    numberOfTicks,
     // Memoized handlers
     handleMouseOver,
     handleMouseMove,

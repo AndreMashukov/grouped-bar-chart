@@ -80,6 +80,12 @@ export interface TimeSeriesBarChartProps {
   marginRight?: number;
 
   /**
+   * Number of ticks on the y-axis
+   * @default 5
+   */
+  numberOfTicks?: number;
+
+  /**
    * Custom y-axis tick format function
    */
   yTickFormat?: (value: number) => string;

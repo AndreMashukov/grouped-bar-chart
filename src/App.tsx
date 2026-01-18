@@ -24,6 +24,7 @@ function App() {
   const [barWidthDays, setBarWidthDays] = useState(7)
   const [showXAxisLine, setShowXAxisLine] = useState(true)
   const [showYAxisLine, setShowYAxisLine] = useState(true)
+  const [numberOfTicks, setNumberOfTicks] = useState(5)
 
   return (
     <div className="App">
@@ -50,6 +51,18 @@ function App() {
             step="0.5"
             value={barWidthDays} 
             onChange={(e) => setBarWidthDays(Number(e.target.value))}
+            style={{ width: '200px', marginLeft: '10px' }}
+          />
+        </div>
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <label>numberOfTicks: {numberOfTicks}</label>
+          <input 
+            type="range" 
+            min="2" 
+            max="15" 
+            step="1"
+            value={numberOfTicks} 
+            onChange={(e) => setNumberOfTicks(Number(e.target.value))}
             style={{ width: '200px', marginLeft: '10px' }}
           />
         </div>
@@ -85,6 +98,7 @@ function App() {
             barWidthDays={barWidthDays}
             showXAxisLine={showXAxisLine}
             showYAxisLine={showYAxisLine}
+            numberOfTicks={numberOfTicks}
             marginBottom={0}
             width={1000}
             height={400}
